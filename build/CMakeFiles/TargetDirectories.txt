@@ -835,6 +835,13 @@ C:/Users/kaltsoplyn/Nextcloud/Coding_NC/ESP-IDF/Waveshare_ESP32-S3-Mini-Zero-M/T
 C:/Users/kaltsoplyn/Nextcloud/Coding_NC/ESP-IDF/Waveshare_ESP32-S3-Mini-Zero-M/Thermistron/build/esp-idf/wifi_provisioning/CMakeFiles/install.dir
 C:/Users/kaltsoplyn/Nextcloud/Coding_NC/ESP-IDF/Waveshare_ESP32-S3-Mini-Zero-M/Thermistron/build/esp-idf/wifi_provisioning/CMakeFiles/install/local.dir
 C:/Users/kaltsoplyn/Nextcloud/Coding_NC/ESP-IDF/Waveshare_ESP32-S3-Mini-Zero-M/Thermistron/build/esp-idf/wifi_provisioning/CMakeFiles/install/strip.dir
+C:/Users/kaltsoplyn/Nextcloud/Coding_NC/ESP-IDF/Waveshare_ESP32-S3-Mini-Zero-M/Thermistron/build/esp-idf/config_comp/CMakeFiles/__idf_config_comp.dir
+C:/Users/kaltsoplyn/Nextcloud/Coding_NC/ESP-IDF/Waveshare_ESP32-S3-Mini-Zero-M/Thermistron/build/esp-idf/config_comp/CMakeFiles/edit_cache.dir
+C:/Users/kaltsoplyn/Nextcloud/Coding_NC/ESP-IDF/Waveshare_ESP32-S3-Mini-Zero-M/Thermistron/build/esp-idf/config_comp/CMakeFiles/rebuild_cache.dir
+C:/Users/kaltsoplyn/Nextcloud/Coding_NC/ESP-IDF/Waveshare_ESP32-S3-Mini-Zero-M/Thermistron/build/esp-idf/config_comp/CMakeFiles/list_install_components.dir
+C:/Users/kaltsoplyn/Nextcloud/Coding_NC/ESP-IDF/Waveshare_ESP32-S3-Mini-Zero-M/Thermistron/build/esp-idf/config_comp/CMakeFiles/install.dir
+C:/Users/kaltsoplyn/Nextcloud/Coding_NC/ESP-IDF/Waveshare_ESP32-S3-Mini-Zero-M/Thermistron/build/esp-idf/config_comp/CMakeFiles/install/local.dir
+C:/Users/kaltsoplyn/Nextcloud/Coding_NC/ESP-IDF/Waveshare_ESP32-S3-Mini-Zero-M/Thermistron/build/esp-idf/config_comp/CMakeFiles/install/strip.dir
 C:/Users/kaltsoplyn/Nextcloud/Coding_NC/ESP-IDF/Waveshare_ESP32-S3-Mini-Zero-M/Thermistron/build/esp-idf/main/CMakeFiles/__idf_main.dir
 C:/Users/kaltsoplyn/Nextcloud/Coding_NC/ESP-IDF/Waveshare_ESP32-S3-Mini-Zero-M/Thermistron/build/esp-idf/main/CMakeFiles/edit_cache.dir
 C:/Users/kaltsoplyn/Nextcloud/Coding_NC/ESP-IDF/Waveshare_ESP32-S3-Mini-Zero-M/Thermistron/build/esp-idf/main/CMakeFiles/rebuild_cache.dir

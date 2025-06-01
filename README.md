@@ -8,3 +8,4 @@ A python script is included here for communicating with the device, timestamping
 
 Timestamping happens on the host side, because otherwise WiFi connections would have to be initiated, NTP servers contacted etc.   
 
+(status: initial commit - nothing actually implemented)
