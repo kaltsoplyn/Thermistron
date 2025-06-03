@@ -12,7 +12,11 @@
 #include "esp_chip_info.h"
 #include "esp_flash.h"
 #include "esp_system.h"
+#include "esp_log.h"
 #include "config_comp.h"
+#include "temp_comp.h"
+
+static const char *TAG = "thermistron_main";
 
 void task_temperature_measurement(void *arg) {
     while (1) {
@@ -38,4 +42,25 @@ void app_main(void)
            (chip_info.features & CHIP_FEATURE_IEEE802154) ? ", 802.15.4 (Zigbee/Thread)" : "");
 
     fflush(stdout);
+
+    esp_err_t ret = config_comp_init();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize config component: %s", esp_err_to_name(ret));
+        return;
+    }
+    ESP_LOGI(TAG, "Configuration component initialized successfully");
+
+    ret = temp_comp_init();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize temperature measurement component: %s", esp_err_to_name(ret));
+        return;
+    }
+    ESP_LOGI(TAG, "Measurement component initialized successfully");
+
+
+    ESP_LOGI(TAG, "Initialization complete");
+
+    xTaskCreate(temp_comp_measurement_task, "temperature_measurement_task", 4096, NULL, 5, NULL);
+
+
 }

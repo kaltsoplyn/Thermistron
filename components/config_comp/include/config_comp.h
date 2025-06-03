@@ -4,7 +4,8 @@
 #include <stdbool.h>
 #include "esp_adc/adc_oneshot.h"
 
-#define DEFAULT_MEASUREMENT_INTERVAL_MS    10000
+#define MAX_CONFIG_UPDATE_CALLBACKS     3
+#define DEFAULT_MEASUREMENT_INTERVAL_MS 10000
 #define MIN_SAMPLING_INTERVAL_MS        1000
 #define MAX_THERMISTOR_COUNT            6
 #define ADC_BITWIDTH                    ADC_BITWIDTH_12
@@ -20,6 +21,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef void (*config_update_callback_t)(void);
 
 typedef struct {
     char    name[10];
@@ -55,6 +58,8 @@ esp_err_t config_comp_get_thermistor_config(int index, ThermistorConfig_t *confi
 
 esp_err_t config_comp_get_adc_unit_handle(adc_oneshot_unit_handle_t *adc_unit_handle);
 
+esp_err_t config_comp_register_update_callback(config_update_callback_t callback);
+esp_err_t config_comp_unregister_update_callback(config_update_callback_t callback);
 
 
 #ifdef __cplusplus

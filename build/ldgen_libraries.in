@@ -84,4 +84,5 @@ $<TARGET_FILE:__idf_touch_element>
 $<TARGET_FILE:__idf_usb>
 $<TARGET_FILE:__idf_wifi_provisioning>
 $<TARGET_FILE:__idf_config_comp>
+$<TARGET_FILE:__idf_temp_comp>
 $<TARGET_FILE:__idf_main>

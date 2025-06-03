@@ -7,6 +7,16 @@
 static const char *TAG = "config_comp";
 static AppConfig_t s_app_config;
 static SemaphoreHandle_t s_config_mutex = NULL;
+static config_update_callback_t s_update_callbacks[MAX_CONFIG_UPDATE_CALLBACKS] = {NULL};
+
+static void notify_config_updated() {
+    for (int i = 0; i < MAX_CONFIG_UPDATE_CALLBACKS; ++i) {
+        if (s_update_callbacks[i] != NULL) {
+            ESP_LOGD(TAG, "Notifying callback %d of config update", i);
+            s_update_callbacks[i]();
+        }
+    }
+}
 
 esp_err_t config_comp_init() {
     esp_err_t ret = ESP_OK;
@@ -24,6 +34,8 @@ esp_err_t config_comp_init() {
     s_app_config.serial_stream_active = false;
     s_app_config.thermistor_count = 5;
 
+    // Definition below is silly in that I'm hardcoding 6 thermistors, so MAX_THERMISTOR_COUNT doesn't make much sense
+    // If I change the MAX_THERMISTOR_COUNT, I should also change the hardcode below
     const ThermistorConfig_t thermistors[MAX_THERMISTOR_COUNT] = {
 
         {"Therm1",  9782, ADC_CHANNEL_0}, // Example values
@@ -75,6 +87,7 @@ esp_err_t config_comp_set_sampling_interval(int sampling_interval_ms){
     xSemaphoreTake(s_config_mutex, portMAX_DELAY);
     s_app_config.sampling_interval_ms = sampling_interval_ms;
     xSemaphoreGive(s_config_mutex);
+    notify_config_updated();
     ESP_LOGI(TAG, "Sampling interval set to %d ms", sampling_interval_ms);
     return ESP_OK;
 }
@@ -91,6 +104,7 @@ esp_err_t config_comp_set_serial_stream_active(bool active) {
     xSemaphoreTake(s_config_mutex, portMAX_DELAY);
     s_app_config.serial_stream_active = active;
     xSemaphoreGive(s_config_mutex);
+    notify_config_updated();
     ESP_LOGI(TAG, "Serial stream is now %s", active ? "active" : "inactive");
     return ESP_OK;
 }
@@ -103,18 +117,23 @@ bool config_comp_get_serial_stream_active() {
     return active;
 }
 
-esp_err_t config_comp_update_thermistor_count() {
-    xSemaphoreTake(s_config_mutex, portMAX_DELAY);
-    int count = MAX_THERMISTOR_COUNT;
+static void _update_thermistor_count() {
+    int count = 0;
     for (int i = 0; i < MAX_THERMISTOR_COUNT; i++) {
         char *name = s_app_config.thermistors[i].name;
-        if (name[0] == '\0' || strcmp(name, "UNUSED") == 0) {
-            count -= 1;
+        if (name[0] != '\0' && strcmp(name, "UNUSED") != 0) {
+            count++;
         }
     }
     s_app_config.thermistor_count = count;
+}
+
+esp_err_t config_comp_update_thermistor_count() {
+    xSemaphoreTake(s_config_mutex, portMAX_DELAY);
+    _update_thermistor_count();
     xSemaphoreGive(s_config_mutex);
-    ESP_LOGI(TAG, "Thermistor count updated to %d", count);
+    notify_config_updated();
+    ESP_LOGI(TAG, "Thermistor count updated to %d", s_app_config.thermistor_count);
     return ESP_OK;
 }
 
@@ -138,6 +157,7 @@ esp_err_t config_comp_set_thermistor_config(int index, const ThermistorConfig_t 
     }
     xSemaphoreTake(s_config_mutex, portMAX_DELAY);
     memcpy(&s_app_config.thermistors[index], config, sizeof(ThermistorConfig_t));
+    _update_thermistor_count();
     xSemaphoreGive(s_config_mutex);
     ESP_LOGI(TAG, "Thermistor %d configuration updated: %s, Resistor: %d, ADC Channel: %d",
              index, config->name, config->divider_resistor_value, config->adc_channel);
@@ -169,4 +189,34 @@ esp_err_t config_comp_get_adc_unit_handle(adc_oneshot_unit_handle_t *adc_unit_ha
     xSemaphoreGive(s_config_mutex);
     ESP_LOGI(TAG, "Retrieved ADC unit handle");
     return ESP_OK;
+}
+
+esp_err_t config_comp_register_update_callback(config_update_callback_t callback) {
+    if (callback == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    for (int i = 0; i < MAX_CONFIG_UPDATE_CALLBACKS; ++i) {
+        if (s_update_callbacks[i] == NULL) {
+            s_update_callbacks[i] = callback;
+            ESP_LOGI(TAG, "Registered new config update callback at index %d", i);
+            return ESP_OK;
+        }
+    }
+    ESP_LOGE(TAG, "Failed to register config update callback, no free slots");
+    return ESP_ERR_NO_MEM; // Or ESP_ERR_INVALID_STATE if all slots are full
+}
+
+esp_err_t config_comp_unregister_update_callback(config_update_callback_t callback) {
+    if (callback == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    for (int i = 0; i < MAX_CONFIG_UPDATE_CALLBACKS; ++i) {
+        if (s_update_callbacks[i] == callback) {
+            s_update_callbacks[i] = NULL;
+            ESP_LOGI(TAG, "Unregistered config update callback from index %d", i);
+            return ESP_OK;
+        }
+    }
+    ESP_LOGW(TAG, "Failed to unregister config update callback, not found");
+    return ESP_ERR_NOT_FOUND;
 }
