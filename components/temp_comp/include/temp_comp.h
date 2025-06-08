@@ -21,7 +21,7 @@ esp_err_t temp_comp_init(void);
 
 void temp_comp_measurement_task(void *arg);
 
-esp_err_t temp_comp_get_measurement_data_json(char *buffer, size_t buffer_size);
+esp_err_t temp_comp_get_latest_temps_json(char *buffer, size_t buffer_size);
 
 
 

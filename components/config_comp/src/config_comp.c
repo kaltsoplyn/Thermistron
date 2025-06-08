@@ -18,6 +18,17 @@ static void notify_config_updated() {
     }
 }
 
+static void _update_thermistor_count() {
+    int count = 0;
+    for (int i = 0; i < MAX_THERMISTOR_COUNT; i++) {
+        char *name = s_app_config.thermistors[i].name;
+        if (name[0] != '\0' && strcmp(name, "UNUSED") != 0) {
+            count++;
+        }
+    }
+    s_app_config.thermistor_count = count;
+}
+
 esp_err_t config_comp_init() {
     esp_err_t ret = ESP_OK;
 
@@ -32,22 +43,24 @@ esp_err_t config_comp_init() {
     // Initialize the application configuration with default values
     s_app_config.sampling_interval_ms = DEFAULT_MEASUREMENT_INTERVAL_MS;
     s_app_config.serial_stream_active = false;
+    s_app_config.log_temp_measurements = false;
     s_app_config.thermistor_count = 5;
 
     // Definition below is silly in that I'm hardcoding 6 thermistors, so MAX_THERMISTOR_COUNT doesn't make much sense
     // If I change the MAX_THERMISTOR_COUNT, I should also change the hardcode below
     const ThermistorConfig_t thermistors[MAX_THERMISTOR_COUNT] = {
 
-        {"Therm1",  9782, ADC_CHANNEL_0}, // Example values
-        {"Therm2",  9795, ADC_CHANNEL_1},
-        {"Therm3",  9888, ADC_CHANNEL_2},
-        {"Therm4",  9963, ADC_CHANNEL_3},
-        {"Therm5", 10233, ADC_CHANNEL_4},
-        {"UNUSED", 10000, ADC_CHANNEL_5} // <-- unused slot
+        {"Therm1",  9782, 0, ADC_CHANNEL_0}, // Example values
+        {"Therm2",  9795, 0, ADC_CHANNEL_1},
+        {"Therm3",  9888, 0, ADC_CHANNEL_2},
+        {"Therm4",  9963, 0, ADC_CHANNEL_3},
+        {"Therm5", 10233, 0, ADC_CHANNEL_4},
+        {"UNUSED", 10000, 0, ADC_CHANNEL_5} // <-- unused slot
     };
 
     memcpy(s_app_config.thermistors, thermistors, sizeof(thermistors));
 
+    _update_thermistor_count();
 
     // Initialize ADC unit handle
     adc_oneshot_unit_init_cfg_t adc_init_cfg = {
@@ -117,15 +130,21 @@ bool config_comp_get_serial_stream_active() {
     return active;
 }
 
-static void _update_thermistor_count() {
-    int count = 0;
-    for (int i = 0; i < MAX_THERMISTOR_COUNT; i++) {
-        char *name = s_app_config.thermistors[i].name;
-        if (name[0] != '\0' && strcmp(name, "UNUSED") != 0) {
-            count++;
-        }
-    }
-    s_app_config.thermistor_count = count;
+esp_err_t config_comp_set_log_temps_active(bool active) {
+    xSemaphoreTake(s_config_mutex, portMAX_DELAY);
+    s_app_config.log_temp_measurements = active;
+    xSemaphoreGive(s_config_mutex);
+    notify_config_updated();
+    ESP_LOGI(TAG, "Logging temperature measurements to console is now %s", active ? "active" : "inactive");
+    return ESP_OK;
+}
+
+bool config_comp_get_log_temps_active() {
+    bool active;
+    xSemaphoreTake(s_config_mutex, portMAX_DELAY);
+    active = s_app_config.log_temp_measurements;
+    xSemaphoreGive(s_config_mutex);
+    return active;
 }
 
 esp_err_t config_comp_update_thermistor_count() {
@@ -159,6 +178,7 @@ esp_err_t config_comp_set_thermistor_config(int index, const ThermistorConfig_t 
     memcpy(&s_app_config.thermistors[index], config, sizeof(ThermistorConfig_t));
     _update_thermistor_count();
     xSemaphoreGive(s_config_mutex);
+    notify_config_updated();
     ESP_LOGI(TAG, "Thermistor %d configuration updated: %s, Resistor: %d, ADC Channel: %d",
              index, config->name, config->divider_resistor_value, config->adc_channel);
     return ESP_OK;
@@ -178,6 +198,35 @@ esp_err_t config_comp_get_thermistor_config(int index, ThermistorConfig_t *confi
     xSemaphoreGive(s_config_mutex);
     return ESP_OK;
 }
+
+esp_err_t config_comp_set_calibration_resistance_offset(int index, int offset) {
+    if (index < 0 || index > MAX_THERMISTOR_COUNT - 1) {
+        ESP_LOGE(TAG, "Thermistor index %d is out of bounds", index);
+        return ESP_ERR_INVALID_ARG;
+    }
+    xSemaphoreTake(s_config_mutex, portMAX_DELAY);
+    s_app_config.thermistors[index].calibration_resistance_offset = offset;
+    xSemaphoreGive(s_config_mutex);
+    ESP_LOGI(TAG, "Set calibration resistance offset for thermistor %d to %d Ohm", index, offset);
+    notify_config_updated();
+    return ESP_OK;
+}
+
+esp_err_t config_comp_get_calibration_resistance_offset(int index, int *offset) {
+    if (index < 0 || index > MAX_THERMISTOR_COUNT - 1) {
+        ESP_LOGE(TAG, "Thermistor index %d is out of bounds", index);
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (offset == NULL) {
+        ESP_LOGE(TAG, "Provided offset pointer is null for get_calibration_resistance_offset");
+        return ESP_ERR_INVALID_ARG;
+    }
+    xSemaphoreTake(s_config_mutex, portMAX_DELAY);
+    *offset = s_app_config.thermistors[index].calibration_resistance_offset;
+    xSemaphoreGive(s_config_mutex);
+    return ESP_OK;
+}
+
 
 esp_err_t config_comp_get_adc_unit_handle(adc_oneshot_unit_handle_t *adc_unit_handle) {
     if (adc_unit_handle == NULL) {

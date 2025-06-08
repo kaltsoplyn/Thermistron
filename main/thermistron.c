@@ -15,6 +15,7 @@
 #include "esp_log.h"
 #include "config_comp.h"
 #include "temp_comp.h"
+#include "serial_comp.h"
 
 static const char *TAG = "thermistron_main";
 
@@ -55,12 +56,19 @@ void app_main(void)
         ESP_LOGE(TAG, "Failed to initialize temperature measurement component: %s", esp_err_to_name(ret));
         return;
     }
-    ESP_LOGI(TAG, "Measurement component initialized successfully");
+    ESP_LOGI(TAG, "Temperature measurement component initialized successfully");
+
+    ret = serial_comp_init();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize serial communication component: %s", esp_err_to_name(ret));
+        return;
+    }
+    ESP_LOGI(TAG, "Serial communication component initialized successfully");
 
 
     ESP_LOGI(TAG, "Initialization complete");
 
     xTaskCreate(temp_comp_measurement_task, "temperature_measurement_task", 4096, NULL, 5, NULL);
-
+    xTaskCreate(serial_comp_task, "serial_comp_task", SERIAL_STACK_SIZE, NULL, 4, NULL);
 
 }

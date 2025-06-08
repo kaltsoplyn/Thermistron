@@ -26,7 +26,8 @@ typedef void (*config_update_callback_t)(void);
 
 typedef struct {
     char    name[10];
-    int     divider_resistor_value;
+    int     divider_resistor_value;         // Ohm
+    int     calibration_resistance_offset;  // Ohm
     int     adc_channel;
 } ThermistorConfig_t;
 
@@ -34,6 +35,7 @@ typedef struct {
 typedef struct {
     int     sampling_interval_ms;                               // Default: 10000, Min: 1000
     bool    serial_stream_active;                               // Default: false
+    bool    log_temp_measurements;                              // Default: false -> whether to log temperatures to console 
     int     thermistor_count;                                   // Number of active thermistors
     ThermistorConfig_t thermistors[MAX_THERMISTOR_COUNT];       // Array of thermistor pin names
     adc_oneshot_unit_handle_t adc_unit_handle; 
@@ -50,11 +52,17 @@ int config_comp_get_sampling_interval();
 esp_err_t config_comp_set_serial_stream_active(bool active);
 bool config_comp_get_serial_stream_active();
 
+esp_err_t config_comp_set_log_temps_active(bool active);
+bool config_comp_get_log_temps_active();
+
 esp_err_t config_comp_update_thermistor_count();
 int config_comp_get_thermistor_count();
 
 esp_err_t config_comp_set_thermistor_config(int index, const ThermistorConfig_t *config);
 esp_err_t config_comp_get_thermistor_config(int index, ThermistorConfig_t *config);
+
+esp_err_t config_comp_set_calibration_resistance_offset(int index, int offset);
+esp_err_t config_comp_get_calibration_resistance_offset(int index, int *offset);
 
 esp_err_t config_comp_get_adc_unit_handle(adc_oneshot_unit_handle_t *adc_unit_handle);
 
