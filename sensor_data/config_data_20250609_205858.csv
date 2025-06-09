@@ -1,4 +1,0 @@
-timestamp_ms,config_point
-1749491874018,{'sampling_rate_ms': 2000}
-1749491916433,{'serial_stream_active': True}
-1749491936474,{'serial_stream_active': False}
