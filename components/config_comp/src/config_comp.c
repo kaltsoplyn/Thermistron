@@ -93,8 +93,8 @@ esp_err_t config_comp_get_app_config(AppConfig_t *app_config) {
 }
 
 esp_err_t config_comp_set_sampling_interval(int sampling_interval_ms){
-    if (sampling_interval_ms < MIN_SAMPLING_INTERVAL_MS) {
-        ESP_LOGE(TAG, "Sampling interval must be at least %d ms", MIN_SAMPLING_INTERVAL_MS);
+    if (sampling_interval_ms < MIN_SAMPLING_INTERVAL_MS || sampling_interval_ms > MAX_SAMPLING_INTERVAL_MS) {
+        ESP_LOGE(TAG, "Sampling interval must be between %d and %d ms", MIN_SAMPLING_INTERVAL_MS, MAX_SAMPLING_INTERVAL_MS);
         return ESP_ERR_INVALID_ARG;
     }
     xSemaphoreTake(s_config_mutex, portMAX_DELAY);
@@ -186,7 +186,7 @@ esp_err_t config_comp_set_thermistor_config(int index, const ThermistorConfig_t 
 
 esp_err_t config_comp_get_thermistor_config(int index, ThermistorConfig_t *config) {
     if (index < 0 || index > MAX_THERMISTOR_COUNT - 1) {
-        ESP_LOGE(TAG, "Thermistor index %d is out of bounds", index);
+        ESP_LOGE(TAG, "Thermistor index %d (%d for 0-based internal logic) is out of bounds", index + 1, index);
         return ESP_ERR_INVALID_ARG;
     }
     if (config == NULL) {
@@ -201,20 +201,46 @@ esp_err_t config_comp_get_thermistor_config(int index, ThermistorConfig_t *confi
 
 esp_err_t config_comp_set_calibration_resistance_offset(int index, int offset) {
     if (index < 0 || index > MAX_THERMISTOR_COUNT - 1) {
-        ESP_LOGE(TAG, "Thermistor index %d is out of bounds", index);
+        ESP_LOGE(TAG, "Thermistor index %d (%d for 0-based internal logic) is out of bounds", index + 1, index);
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (offset < -MAX_CAL_R_OFFSET || offset > MAX_CAL_R_OFFSET) {
+        ESP_LOGE(TAG, "Required calibration resistance offset is out of bounds, |R_offset| <= %d", MAX_CAL_R_OFFSET);
         return ESP_ERR_INVALID_ARG;
     }
     xSemaphoreTake(s_config_mutex, portMAX_DELAY);
     s_app_config.thermistors[index].calibration_resistance_offset = offset;
     xSemaphoreGive(s_config_mutex);
-    ESP_LOGI(TAG, "Set calibration resistance offset for thermistor %d to %d Ohm", index, offset);
+    ESP_LOGI(TAG, "Set calibration resistance offset for thermistor %s (index: %d | 0-based index: %d) to %d Ohm", s_app_config.thermistors[index].name, index + 1, index, offset);
     notify_config_updated();
     return ESP_OK;
 }
 
+esp_err_t config_comp_incr_calibration_resistance_offset(int index) {
+    int current_offset;
+    esp_err_t ret = config_comp_get_calibration_resistance_offset(index, &current_offset);
+    if (ret != ESP_OK) {
+        return ret;
+    }
+    current_offset += DEFAULT_CAL_R_STEP;
+    ret = config_comp_set_calibration_resistance_offset(index, current_offset);
+    return ret;
+}
+
+esp_err_t config_comp_decr_calibration_resistance_offset(int index) {
+    int current_offset;
+    esp_err_t ret = config_comp_get_calibration_resistance_offset(index, &current_offset);
+    if (ret != ESP_OK) {
+        return ret;
+    }
+    current_offset -= DEFAULT_CAL_R_STEP;
+    ret = config_comp_set_calibration_resistance_offset(index, current_offset);
+    return ret;
+}
+
 esp_err_t config_comp_get_calibration_resistance_offset(int index, int *offset) {
     if (index < 0 || index > MAX_THERMISTOR_COUNT - 1) {
-        ESP_LOGE(TAG, "Thermistor index %d is out of bounds", index);
+        ESP_LOGE(TAG, "Thermistor index %d (%d for 0-based internal logic) is out of bounds", index + 1, index);
         return ESP_ERR_INVALID_ARG;
     }
     if (offset == NULL) {

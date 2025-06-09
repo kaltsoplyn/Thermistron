@@ -1,0 +1,3 @@
+timestamp_ms,config_point
+1749504654976,{'serial_stream_active': True}
+1749504684504,{'serial_stream_active': False}

@@ -15,6 +15,8 @@ static int s_cached_sampling_interval_ms = DEFAULT_MEASUREMENT_INTERVAL_MS; // D
 static bool s_log_temp_measurements = false;
 static adc_oneshot_unit_handle_t s_adc_handle = NULL;
 
+// static char temp_buffer[2048] = {0}; //TEMPORARY for DEBUGGING
+
 static float s_latest_temperatures[MAX_THERMISTOR_COUNT];
 static SemaphoreHandle_t s_temp_data_mutex = NULL;
 
@@ -25,7 +27,7 @@ static const adc_oneshot_chan_cfg_t s_channel_config = {
     .atten = ADC_ATTENUATION,
 };
 
-static esp_err_t refresh_cached_config_and_adc() {
+esp_err_t temp_comp_refresh_cached_config_and_adc() {
     esp_err_t ret;
 
     // If ADC unit is re-initialized by config_comp, old handle is invalid.
@@ -86,7 +88,7 @@ esp_err_t temp_comp_init() {
         return ESP_FAIL;
     }
 
-    ret = refresh_cached_config_and_adc();
+    ret = temp_comp_refresh_cached_config_and_adc();
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Initial configuration cache refresh failed.");
         // Mutex for temp data is created, but component init fails.
@@ -213,7 +215,7 @@ static esp_err_t _measure_temperature(ThermistorConfig_t *thermistor, float *out
     *out_temperature = temp_k - 273.15f; // Convert Kelvin to Celsius
 
     if (s_log_temp_measurements) {
-        ESP_LOGI(TAG, "Thermistor %s: ADC %d, Rth %.2f Ohm, Temp: %.2f C", thermistor->name, adc_value, Rth, *out_temperature);
+        ESP_LOGI(TAG, "Thermistor %s: ADC %d, Rth %.2f Ohm (incl. calibration offset: %d Ohm), Temp: %.2f C", thermistor->name, adc_value, Rth, calibration_offset, *out_temperature);
     }
 
     return ESP_OK;
@@ -224,7 +226,7 @@ void temp_comp_measurement_task(void *arg) {
     while (1) {
         if (s_config_needs_refresh) {
             ESP_LOGI(TAG, "Configuration change detected, refreshing cache...");
-            if (refresh_cached_config_and_adc() == ESP_OK) {
+            if (temp_comp_refresh_cached_config_and_adc() == ESP_OK) {
                 s_config_needs_refresh = false; // Clear the flag only on success
                 ESP_LOGI(TAG, "Cache refreshed successfully.");
             } else {
@@ -253,6 +255,10 @@ void temp_comp_measurement_task(void *arg) {
                 xSemaphoreGive(s_temp_data_mutex);
             }
         }
+        // if (s_log_temp_measurements) {
+        //     temp_comp_get_latest_temps_json(temp_buffer, 2048);
+        //     ESP_LOGI(TAG, "Latest temperatures JSON: %s", temp_buffer);
+        // }
         vTaskDelay(pdMS_TO_TICKS(s_cached_sampling_interval_ms));
     }
 }
@@ -328,7 +334,7 @@ esp_err_t temp_comp_get_latest_temps_json(char *buffer, size_t buffer_size) {
     // Release mutex
     xSemaphoreGive(s_temp_data_mutex);
 
-    ESP_LOGD(TAG, "Generated JSON: %s", buffer);
+    // ESP_LOGD(TAG, "Generated JSON: %s", buffer);
     return ESP_OK;
 
     fail_buffer_too_small:

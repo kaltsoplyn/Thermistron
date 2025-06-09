@@ -5,12 +5,15 @@
 #include "esp_adc/adc_oneshot.h"
 
 #define MAX_CONFIG_UPDATE_CALLBACKS     3
-#define DEFAULT_MEASUREMENT_INTERVAL_MS 10000
-#define MIN_SAMPLING_INTERVAL_MS        1000
+#define DEFAULT_MEASUREMENT_INTERVAL_MS 1000
+#define MIN_SAMPLING_INTERVAL_MS        100
+#define MAX_SAMPLING_INTERVAL_MS        3600000
 #define MAX_THERMISTOR_COUNT            6
 #define ADC_BITWIDTH                    ADC_BITWIDTH_12
 #define ADC_ATTENUATION                 ADC_ATTEN_DB_12  // Supposedely ADC_ATTEN_DB_12 → 150 mV ~ 2450 mV
 #define ADC_UNIT_ID                     ADC_UNIT_1
+#define DEFAULT_CAL_R_STEP              50 // Ohm, default calibration resistance step of incr/decr functions
+#define MAX_CAL_R_OFFSET                5000
 
 // NOTE: bitwidth and attenuation really go to the channel measurement in the sensor components:
 //adc_oneshot_chan_cfg_t channel_config = {
@@ -63,6 +66,9 @@ esp_err_t config_comp_get_thermistor_config(int index, ThermistorConfig_t *confi
 
 esp_err_t config_comp_set_calibration_resistance_offset(int index, int offset);
 esp_err_t config_comp_get_calibration_resistance_offset(int index, int *offset);
+
+esp_err_t config_comp_incr_calibration_resistance_offset(int index);
+esp_err_t config_comp_decr_calibration_resistance_offset(int index);
 
 esp_err_t config_comp_get_adc_unit_handle(adc_oneshot_unit_handle_t *adc_unit_handle);
 
